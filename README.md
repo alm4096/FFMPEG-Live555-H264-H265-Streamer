@@ -9,7 +9,7 @@ This project uses the following (and would not work at all without them):
 
 This project simply provides an easy to use 'example' of how to use FFMPEG and LIVE555 together to encode and stream video for Windows programmers using Visual Studio.
 
-## PROJECT ULTIMATUM
+## Project Ultimatum
 This project aims to do the following:
 - Provide a simple threaded class for H264 and H265 encoding and streaming using FFMPEG and LIVE555 (other formats can be added as needed)
 - Minimum fuss class setup and usage (it should be as easy as creating the class and passing a frame to get working, keep it simple!)
@@ -27,9 +27,11 @@ Please keep this Github inline with the ultimatum. I encourage anyone to create 
   - Unicast / Multicast
   - Encoding presets (for H264 and H265)
 - Update to latest FFMPEG and LIVE555 versions
+- Check for memory leaks
   
 ## Current Status: First Release V1.0
 - V1.0 Initial Release 7th July 2016:
    - Encodes and streams in H264, H265, MP4, and MP2
    - Streams in Multicast and Unicast
    - Options mostly hardcoded
+   - Project file only works in VS2013 and above (mixup with creating the solution file, will be fixed soon)
