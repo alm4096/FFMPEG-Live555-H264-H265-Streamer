@@ -10,11 +10,13 @@ This project simply provides an easy to use 'example' of how to use FFMPEG and L
 
 ## Project Ultimatum
 This project aims to do the following:
-- Provide a simple threaded class for H264 and H265 encoding and streaming using FFMPEG and LIVE555 (other formats can be added as needed)
+- Provide a simple threaded class for H264 / H265 encoding and streaming using FFMPEG and LIVE555 (other formats can be added as needed)
 - Minimum fuss class setup and usage (it should be as easy as creating the class and passing a frame to get working, keep it simple!)
 - For use only with Visual Studio 2010+ development environment (exclusively for Windows only)
 
 Please keep this Git inline with the ultimatum. I encourage anyone to create their own copy of this Git and take this project in another direction.
+
+Send me a message if you would like to collaborate.
 
 ## Planned Features
 - Clean up code
