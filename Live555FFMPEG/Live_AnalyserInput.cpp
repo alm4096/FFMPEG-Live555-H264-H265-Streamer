@@ -2,14 +2,10 @@
 #include "Live_AnalyserInput.h"
 #include "Live_AnalyserSource.h"
 
-#ifdef _DEBUG
-//#include "DebugHeader.h"
-#endif
 ////////// WISInput implementation //////////
 
 AnalyserInput* AnalyserInput::createNew(UsageEnvironment& env, FFMPEG *Encoder) {
   if (!fHaveInitialized) {
-    //if (!initialize(env)) return NULL;
     fHaveInitialized = True;
   }
 
@@ -36,7 +32,7 @@ AnalyserInput::~AnalyserInput() {
 }
 
 
-
+//global inits, not sure this should be there...
 
 Boolean AnalyserInput::fHaveInitialized = False;
 int AnalyserInput::fOurVideoFileNo = -1;

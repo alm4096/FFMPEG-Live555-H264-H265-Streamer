@@ -26,10 +26,6 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #include <GroupsockHelper.hh> // for "gettimeofday()"
 #include "FFMPEGClass.h"
 #include <atltrace.h>
-//#define TRACE ATLTRACE
-#ifdef _DEBUG
-//#include "DebugHeader.h"
-#endif
 AnalyserSource* AnalyserSource::createNew(UsageEnvironment& env, FFMPEG * E_Source) {
   return new AnalyserSource(env, E_Source);
 }
@@ -89,16 +85,11 @@ unsigned AnalyserSource::GetRefCount() {
 
 void AnalyserSource::doGetNextFrame() {
   // This function is called (by our 'downstream' object) when it asks for new data.
-  //LOG_MSG("Do Next Frame..");
   // Note: If, for some reason, the source device stops being readable (e.g., it gets closed), then you do the following:
-  //if (0 /* the source stops being readable */ /*%%% TO BE WRITTEN %%%*/) {
+
   unsigned int FrameID = Encoding_Source->GetFrameID();
-  //TRACE("FrameID %d\n",FrameID);
+
   if (FrameID == 0){
-    //LOG_MSG("No Data. Close");
-#ifdef Live555Debug
-	TRACE("CLOSING!!!!\n");  
-#endif
 	Encoding_Source->ReleaseFrame();
     handleClosure(this);
     return;
@@ -109,8 +100,6 @@ void AnalyserSource::doGetNextFrame() {
   // If a new frame of data is immediately available to be delivered, then do this now:
   if (Last_Sent_Frame_ID != FrameID){
     deliverFrame();
-	//TRACE("LIVE555 Frame ID Same\n");  
-	//DEBUG_MSG("Frame ID: %d",FrameID);
   }
 
   // No new data is immediately available to be delivered.  We don't do anything more here.
@@ -145,9 +134,6 @@ void AnalyserSource::deliverFrame() {
   // Note the code below.
 
   if (!isCurrentlyAwaitingData()) {
-#ifdef Live555Debug
-	  TRACE("LIVE555 Not Ready for Data\n");  
-#endif
 	  return; // we're not ready for the data yet
   }
 
@@ -176,27 +162,14 @@ void AnalyserSource::deliverFrame() {
 		Encoding_Source->ReleaseFrame();
 	}
 	else {
-		//AM Added, something bad happened
-		//ALTRACE("LIVE555: FRAME NULL\n");
-		//Encoding_Source->ReleaseFrame();
-#ifdef Live555Debug
-		TRACE("LIVE555 No Frame Data\n");  
-#endif
+		//AM Added, something bad happened, try and continue
+	
 		return;
 
-		//fFrameSize=0;
-		//fTo=NULL;
-		//__debugbreak();
-		//TRACE("CLOSING!!!!\n");  
-		//handleClosure(this);
-		
 	}
   }
   else {
-    //LOG_MSG("Closing Connection due to Frame Error..");
-#ifdef Live555Debug
-	  TRACE("CLOSING!!!!\n");  
-#endif
+	  //Close our stream
 	  Encoding_Source->ReleaseFrame();
 	  __debugbreak();
 	  handleClosure(this);
@@ -206,17 +179,3 @@ void AnalyserSource::deliverFrame() {
   // After delivering the data, inform the reader that it is now available:
   FramedSource::afterGetting(this);
 }
-
-
-// The following code would be called to signal that a new frame of data has become available.
-// This (unlike other "LIVE555 Streaming Media" library code) may be called from a separate thread.
-#if 0 /* This has been written into the encoding thread and is auto called after a source is registered with the encoding thread. */
-void signalNewAnalyserFrameData() {
-  TaskScheduler* ourScheduler = NULL; //%%% TO BE WRITTEN %%%
-  AnalyserSource* ourDevice  = NULL; //%%% TO BE WRITTEN %%%
-
-  if (ourScheduler != NULL) { // sanity check
-    ourScheduler->triggerEvent(AnalyserSource::eventTriggerId, ourDevice);
-  }
-}
-#endif

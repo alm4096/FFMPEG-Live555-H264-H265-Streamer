@@ -1,16 +1,16 @@
-// *****************************************************************************
-//
-//     
-//
-// *****************************************************************************
+//==========================================================================
+// Live555Class
+//==========================================================================
+// Scroll down for selection of stream username and password 
+//==========================================================================
 
+
+//some includes
 #include "stdafx.h"
 #include "Live555Class.h"
 #include "Live_AnalysingServerMediaSubsession.h"
 #include <exception>
-#ifdef _DEBUG
-//#include "DebugHeader.h"
-#endif
+
 // ==========================================================================
 Live555Class::Live555Class( FFMPEG * a_Encoder )
 	: mHandle( INVALID_HANDLE_VALUE )
@@ -20,13 +20,14 @@ Live555Class::Live555Class( FFMPEG * a_Encoder )
 	, m_Encoder (a_Encoder)
 {	
 	SetDefaultValues();
-
-//	TRACE("Live555 Init\n");
 }
 
 
 void Live555Class::SetDefaultValues() {
+	//Set default RTSP port
 	RTSPPort=554;
+	
+	//Set username and password to NULL
 	RTSPUser[0]=0;
 	RTSPPass[0]=0;
 }
@@ -117,6 +118,9 @@ DWORD Live555Class::GetReturnValue()
 // ==========================================================================
 DWORD Live555Class::Function()
 {
+	//Main functions loop
+	//
+	//We need a loop here because the port may be in use from a previous session. It will time out eventually
 	while (mStop==false) {
 		LiveSingleStart();
 		if (mStop) {
@@ -130,29 +134,32 @@ DWORD Live555Class::Function()
 
 
 DWORD Live555Class::LiveSingleStart() {
-//	TRACE("Live555 Started\n");
+
+	//Some inits
 	Stop_RTSP_Loop=0;
 	TaskScheduler    *scheduler;
 	UsageEnvironment *env ;
 	char RTSP_Address[1024];
 	RTSP_Address[0]=0x00;
 
+	//If there is no encoder then exit
 	if (m_Encoder == NULL){
-//		TRACE("No Video Encoder registered for the RTSP Encoder\n");
 		return 0;
 	}
+
+	//Some live555 setup
 	char* url;
 	scheduler = BasicTaskScheduler::createNew();
 	env = BasicUsageEnvironment::createNew(*scheduler);
 
 	UserAuthenticationDatabase* authDB = NULL;
 	RTSPServer* rtspServer =NULL;
+
+	//Create RTSP stream with or without username/password authentication
 	if ((RTSPUser[0]==0x00) || (RTSPPass[0]==0x00)) {
 		rtspServer = RTSPServer::createNew(*env, RTSPPort);
 	}
 	else {
-		// To implement client access control to the RTSP server, do the following:
-
 		authDB = new UserAuthenticationDatabase;
 		authDB->addUserRecord(RTSPUser, RTSPPass);
 
@@ -163,6 +170,8 @@ DWORD Live555Class::LiveSingleStart() {
 	// Create the RTSP server:
 	ServerMediaSession* sms;
 	UNREFERENCED_PARAMETER(sms);
+
+	//If multicast then init as such
 #ifdef MULTICASTENABLE
 	unsigned short rtpPortNum = 20000;
 	unsigned short rtcpPortNum = rtpPortNum+1;
@@ -172,30 +181,26 @@ DWORD Live555Class::LiveSingleStart() {
 	unsigned short rtspOverHTTPPort = 8080;
 #endif
 
-
 	AnalyserInput* inputDevice;
 
-
 	if (rtspServer == NULL) {
-//		TRACE("LIVE555: Failed to create RTSP server: %s\n", env->getResultMsg());
+		//If the server cannot be initalised then exit
 		return 0;
 	}
 	else {
+		//Use your own stream description here
 		char const* descriptionString = "Session streamed by \"IMC Server\"";
-
-
 
 		// Initialize the WIS input device:
 		inputDevice = AnalyserInput::createNew(*env, m_Encoder);
 		if (inputDevice == NULL) {
-//			TRACE("Live555: Failed to create WIS input device\n");
 			return 0;
 		}
 		else {
-			// A MPEG-1 or 2 video elementary stream:
 			/* Increase the buffer size so we can handle the high res stream.. */
 			OutPacketBuffer::maxSize = 300000;
 
+			//Create our various streams. We need to pass some sort of identifier so that it will init properly 
 #ifdef MULTICASTENABLE
 			destinationAddress.s_addr = chooseRandomIPv4SSMAddress(*env);	
 			ServerMediaSession* sms = ServerMediaSession::createNew(*env, "multicast");
@@ -212,11 +217,13 @@ DWORD Live555Class::LiveSingleStart() {
 			sms->addSubsession(MulticastServerMediaSubsession::createNew(*env, destinationAddress, Port(rtpPortNum), Port(rtcpPortNum), ttl, 96, inputDevice, 999));
 #endif
 
+			//Add the stream to Live555
 			rtspServer->addServerMediaSession(sms);
 			url = rtspServer->rtspURL(sms);
 			*env << "Play this stream using the URL \"" << url << "\"\n";
+
+			//Store our URL
 			m_Encoder->PassRTSPAddress(url);
-//			TRACE("Play this stream using the URL %s\n", rtspServer->rtspURL(sms));
 #else
 			// NOTE: This *must* be a Video Elementary Stream; not a Program Stream
 			sms = ServerMediaSession::createNew(*env, RTSP_Address, RTSP_Address, descriptionString);
@@ -225,15 +232,15 @@ DWORD Live555Class::LiveSingleStart() {
 			rtspServer->addServerMediaSession(sms);
 			url = rtspServer->rtspURL(sms);
 			*env << "Play this stream using the URL \"" << url << "\"\n";
+
+			//Store our URL
 			m_Encoder->PassRTSPAddress(url);
 #endif
-
-			//announceStream(rtspServer, sms, streamName, inputFileName);
-			//LOG_MSG("Play this stream using the URL %s", rtspServer->rtspURL(sms));
 
 		}
 	}
 
+	//Set stop variable to null
 	Stop_RTSP_Loop=0;
 
 	for (;;)
@@ -241,6 +248,7 @@ DWORD Live555Class::LiveSingleStart() {
 		/* The actual work is all carried out inside the LIVE555 Task scheduler */
 		env->taskScheduler().doEventLoop(&Stop_RTSP_Loop); // does not return
 
+		//If we're stopping then exit loop, else try and open the stream again
 		if (mStop) {
 			break;
 		}
@@ -255,13 +263,5 @@ DWORD Live555Class::LiveSingleStart() {
 	env->reclaim();
 	delete scheduler;
 
-	
-	/*
-	
-	scheduler = BasicTaskScheduler::createNew();
-	env = BasicUsageEnvironment::createNew(*scheduler);
-
-	*/
-	
 	return 0;
 }

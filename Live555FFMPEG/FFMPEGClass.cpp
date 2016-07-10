@@ -12,9 +12,6 @@
 
 //=============================
 // Includes
-//-----------------------------
-// FFMPEG is writen in C so we need to use extern "C"
-//-----------------------------
 #include "stdafx.h"
 #include "FFMPEGClass.h"
 #include "Definitions.h"
@@ -22,12 +19,10 @@
 #include <climits>
 #include "Live555Class.h"
 #include <libavutil/error.h>
-#ifdef _DEBUG
-//#include "DebugHeader.h"
-#endif
+
 #define _NOBUFFFRAMES 150
 //=============================
-// Our Creator
+// Our constructor
 //-----------------------------
 // Create any necessary blocks of memory and init variables
 //-----------------------------
@@ -83,6 +78,7 @@ FFMPEG::FFMPEG()
 #endif
 	m_AVIMutexWriteFrame=false;
 	
+	//Create semaphores not Mutexes (in windows land semaphores are equivalent to Mutexes)
 	mFrameMtx=CreateSemaphore(NULL,1,1,NULL);
 	mLiveMtx=CreateSemaphore(NULL,1,1,NULL);
 
@@ -92,14 +88,14 @@ FFMPEG::FFMPEG()
 }
 
 void FFMPEG::SendNewFrame(char * RGBFrame) {
-	
-	//mGrabbingFrame=true; //MUTEX
+	//Pass data if we are ready
 	if (MUTEX_LOCK(&mFrameMtx)) {
 
 		if (mActiveFrame!=NULL){
 			//Do nothing...
 		}
 		else {
+			//Copy frame RGB data
 			memcpy(mInternalFrameBuff1, RGBFrame, mVideoWidth * mVideoHeight * 3); //(set size)
 			mActiveFrame=mInternalFrameBuff1;
 
@@ -240,13 +236,13 @@ void FFMPEG::LoadSQLDatabase(){
 // ==========================================================================
 DWORD FFMPEG::Function()
 {
-
+	//Some inits
 	int mFuncFPS=25;
-
 	mFuncFPS=m_AVIMOV_FPS;
 
 	SetupVideo("Output.avi", mVideoWidth, mVideoHeight, mFuncFPS, m_AVIMOV_GOB, m_AVIMOV_BPS, m_RTP_Payload_Size);
 
+	//Start live555
 	mLive555Class->Start();
 
 	char * RecycleFrame=NULL;
@@ -259,26 +255,27 @@ DWORD FFMPEG::Function()
 
 	StartCounter();
 
+	//Main frame loop (recycles frames if we don't get enough)
 	for (;;)
 	{
+		//If we are stopping then exit
 		if (mStop) {
 			break;
 		}
 
+		// We limit refresh rate to ~ X fps max
 		double mWaitTime = GetCounter();
-	    // We limit refresh rate to ~ 30 fps max
 		
-
-		if ((mWaitTime>=(mWaitTimeout-mProcessTime))){	// || mFrameWaiting) {
+		if ((mWaitTime>=(mWaitTimeout-mProcessTime))){
+			//Count how long each frame takes to process
 			StartCounter();
 
+			//Not sure why this is here, might be able to remove.
 			tempInt = (tempInt + 1) % 100;
 
-			//TRACE("%02d\n",tempInt);
-			//Do work here!!
 			if (MUTEX_LOCK(&mFrameMtx)) {
+				//If we have a frame then process
 				if (mActiveFrame!=NULL){
-					
 					memcpy(mInternalFrameBuff2,mInternalFrameBuff1,640*512*3); //(set size)
 					
 					mNewFrame=mInternalFrameBuff2;				
@@ -293,6 +290,7 @@ DWORD FFMPEG::Function()
 					mProcessTime=(mProcessTime*50+GetCounter())/51;
 				}
 				else if  (RecycleFrame!=NULL) {
+					//Recycle frame
 					MUTEX_UNLOCK(&mFrameMtx);
 
 					mNewFrame=RecycleFrame;				
@@ -301,6 +299,7 @@ DWORD FFMPEG::Function()
 				}
 			}
 			else if  (RecycleFrame!=NULL) {
+				//Recycle frame
 				MUTEX_UNLOCK(&mFrameMtx);
 
 				mNewFrame=RecycleFrame;				
@@ -312,6 +311,8 @@ DWORD FFMPEG::Function()
 
 		Sleep(1);
 	}
+
+	//Clean up
 	mLive555Class->Stop();
 	while(!mLive555Class->IsDone()) {Sleep(1);}
 	CloseVideo();
@@ -319,15 +320,13 @@ DWORD FFMPEG::Function()
 	return 0;
 }
 
-
+//use performance counters instead of sleeps (much more accurate)
 void FFMPEG::StartCounter()
 {
     LARGE_INTEGER li;
 	if (!QueryPerformanceFrequency(&li)) {
 //		TRACE("\nPerformance Counter Failed\n");
 	}
-	//cout << "QueryPerformanceFrequency failed!\n";
-
     PCFreq = double(li.QuadPart)/1000.0;
 
     QueryPerformanceCounter(&li);

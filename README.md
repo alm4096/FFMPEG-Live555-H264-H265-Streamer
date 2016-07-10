@@ -20,7 +20,8 @@ Please keep this Git inline with the ultimatum. I encourage anyone to create the
 - Clean up code
 - Allow 'users' (i.e. programmer using class) to directly change encoding options
 - Make the following an option instead of being hard coded:
-  - Stream name
+  - Video frame size (height and width of stream is hard coded at the moment)
+  - Stream name (name after the IP and Port)
   - Stream authentication (Username and password)
   - Encoding format (H264, H265, etc)
   - Unicast / Multicast

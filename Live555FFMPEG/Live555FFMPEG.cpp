@@ -1,5 +1,11 @@
+//==========================================================================
 // Live555FFMPEG.cpp : Defines the entry point for the console application.
+//==========================================================================
+// Main Example for Live555 and FFMPEG
 //
+// See Definitions.h to select your encoder 
+//==========================================================================
+
 
 #include "stdafx.h"
 #include "FFMPEGClass.h"

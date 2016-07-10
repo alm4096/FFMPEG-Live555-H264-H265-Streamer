@@ -2,9 +2,8 @@
 #include "Definitions.h"
 #include "Live_AnalysingServerMediaSubsession.h"
 #include "FFMPEGClass.h"
-#ifdef _DEBUG
-//#include "DebugHeader.h"
-#endif
+
+
 #ifdef MPEG4ENCODING
 #include <MPEG4ESVideoRTPSink.hh>
 #include <MPEG4VideoStreamFramer.hh>
