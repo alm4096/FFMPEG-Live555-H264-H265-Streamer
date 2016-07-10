@@ -43,11 +43,17 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(SolutionDir)Includes\live\includes\BasicUsageEnvironment\include;$(SolutionDir)Includes\ffmpeg2016-04-05\include;$(SolutionDir)Includes\live\includes\groupsock\include;$(SolutionDir)Includes\live\includes\liveMedia\include;$(SolutionDir)Includes\live\includes\UsageEnvironment\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\Includes\live\libs;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(WindowsSdkDir)\lib;$(SolutionDir)Includes\ffmpeg2016-04-05\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib</LibraryPath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(SolutionDir)Includes\live\includes\BasicUsageEnvironment\include;$(SolutionDir)Includes\ffmpeg2016-04-05\include;$(SolutionDir)Includes\live\includes\groupsock\include;$(SolutionDir)Includes\live\includes\liveMedia\include;$(SolutionDir)Includes\live\includes\UsageEnvironment\include;$(IncludePath);$(SolutionDir)Includes\live\includes\BasicUsageEnvironment\include;$(SolutionDir)Includes\ffmpeg2016-04-05\include;$(SolutionDir)Includes\live\includes\groupsock\include;$(SolutionDir)Includes\live\includes\liveMedia\include;$(SolutionDir)Includes\live\includes\UsageEnvironment\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>$(SolutionDir)\Includes\live\libs;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(WindowsSdkDir)\lib;$(SolutionDir)Includes\ffmpeg2016-04-05\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib</LibraryPath>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
