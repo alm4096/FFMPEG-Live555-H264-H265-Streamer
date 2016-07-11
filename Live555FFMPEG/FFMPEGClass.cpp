@@ -7,6 +7,10 @@
 // Usage: Use this project as a template for your own program, or add the       //
 // FFMPEG class to your project                                                 //
 //==============================================================================//
+// Definitions.h allows you to select an encoder 
+//    - Choose between H264, H265, MP4, and MP2
+//    - Choose between multicast and unicast
+//==========================================================================
 
 
 
@@ -85,6 +89,18 @@ FFMPEG::FFMPEG()
 	avcodec_register_all();
 
 	LoadSQLDatabase();
+}
+
+
+void FFMPEG::SetVideoResolution(int width, int height) {
+	mVideoHeight = height;
+	mVideoWidth = width;
+
+	delete[] mInternalFrameBuff1;
+	delete[] mInternalFrameBuff2;
+
+	mInternalFrameBuff1 = new char[height * width * 3];
+	mInternalFrameBuff2 = new char[height * width * 3];
 }
 
 void FFMPEG::SendNewFrame(char * RGBFrame) {
@@ -276,7 +292,7 @@ DWORD FFMPEG::Function()
 			if (MUTEX_LOCK(&mFrameMtx)) {
 				//If we have a frame then process
 				if (mActiveFrame!=NULL){
-					memcpy(mInternalFrameBuff2,mInternalFrameBuff1,640*512*3); //(set size)
+					memcpy(mInternalFrameBuff2, mInternalFrameBuff1, mVideoWidth * mVideoHeight * 3); //(set size)
 					
 					mNewFrame=mInternalFrameBuff2;				
 					mActiveFrame = NULL;
@@ -786,6 +802,21 @@ void FFMPEG::CloseCodec(void){
 	m_frame = NULL;
 }
 
+void FFMPEG::SetRTSPPort(int PortNo) {
+	mLive555Class->SetRTSPPort(PortNo);
+}
+
+void FFMPEG::SetRTSPUserandPassword(char * Username, char * Password) {
+	mLive555Class->SetRTSPUserandPassword(Username, Password);
+}
+
+void FFMPEG::SetRTSPAddress(char * streamname) {
+	mLive555Class->SetRTSPAddress(streamname);
+}
+
+void FFMPEG::SetRTSPDescription(char * streamdescription) {
+	mLive555Class->SetRTSPDescription(streamdescription);
+}
 
 //=============================
 // Close Codec

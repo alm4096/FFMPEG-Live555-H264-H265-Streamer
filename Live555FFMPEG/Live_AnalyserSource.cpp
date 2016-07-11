@@ -1,3 +1,10 @@
+//==========================================================================
+// Definitions.h allows you to select an encoder 
+//    - Choose between H264, H265, MP4, and MP2
+//    - Choose between multicast and unicast
+//==========================================================================
+
+
 /**********
 This library is free software; you can redistribute it and/or modify it under
 the terms of the GNU Lesser General Public License as published by the

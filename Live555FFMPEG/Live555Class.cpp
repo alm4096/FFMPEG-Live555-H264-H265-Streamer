@@ -3,6 +3,10 @@
 //==========================================================================
 // Scroll down for selection of stream username and password 
 //==========================================================================
+// Definitions.h allows you to select an encoder 
+//    - Choose between H264, H265, MP4, and MP2
+//    - Choose between multicast and unicast
+//==========================================================================
 
 
 //some includes
@@ -30,6 +34,12 @@ void Live555Class::SetDefaultValues() {
 	//Set username and password to NULL
 	RTSPUser[0]=0;
 	RTSPPass[0]=0;
+
+	//Set stream address to null
+	RTSP_Address[0] = 0x00;
+
+	//Set stream description
+	strcpy(RTSP_Description, "Session streamed by \"IMC Server\"");
 }
 
 // ==========================================================================
@@ -139,8 +149,6 @@ DWORD Live555Class::LiveSingleStart() {
 	Stop_RTSP_Loop=0;
 	TaskScheduler    *scheduler;
 	UsageEnvironment *env ;
-	char RTSP_Address[1024];
-	RTSP_Address[0]=0x00;
 
 	//If there is no encoder then exit
 	if (m_Encoder == NULL){
@@ -189,7 +197,7 @@ DWORD Live555Class::LiveSingleStart() {
 	}
 	else {
 		//Use your own stream description here
-		char const* descriptionString = "Session streamed by \"IMC Server\"";
+		//char const* descriptionString = "Session streamed by \"IMC Server\"";
 
 		// Initialize the WIS input device:
 		inputDevice = AnalyserInput::createNew(*env, m_Encoder);
@@ -197,13 +205,13 @@ DWORD Live555Class::LiveSingleStart() {
 			return 0;
 		}
 		else {
-			/* Increase the buffer size so we can handle the high res stream.. */
+			/* Increase the buffer size so we can handle high res streams.. */
 			OutPacketBuffer::maxSize = 300000;
 
 			//Create our various streams. We need to pass some sort of identifier so that it will init properly 
 #ifdef MULTICASTENABLE
 			destinationAddress.s_addr = chooseRandomIPv4SSMAddress(*env);	
-			ServerMediaSession* sms = ServerMediaSession::createNew(*env, "multicast");
+			ServerMediaSession* sms = ServerMediaSession::createNew(*env, RTSP_Address);
 #ifdef H264ENCODING
 			sms->addSubsession(MulticastServerMediaSubsession::createNew(*env,destinationAddress, Port(rtpPortNum), Port(rtcpPortNum), ttl, 96, inputDevice,96));
 #endif
@@ -226,7 +234,7 @@ DWORD Live555Class::LiveSingleStart() {
 			m_Encoder->PassRTSPAddress(url);
 #else
 			// NOTE: This *must* be a Video Elementary Stream; not a Program Stream
-			sms = ServerMediaSession::createNew(*env, RTSP_Address, RTSP_Address, descriptionString);
+			sms = ServerMediaSession::createNew(*env, RTSP_Address, RTSP_Address, RTSP_Description);
 			sms->addSubsession(AnalysingServerMediaSubsession::createNew(*env, *inputDevice, m_Encoder->Get_Bitrate()));
 
 			rtspServer->addServerMediaSession(sms);

@@ -1,3 +1,9 @@
+//==========================================================================
+// Definitions.h allows you to select an encoder 
+//    - Choose between H264, H265, MP4, and MP2
+//    - Choose between multicast and unicast
+//==========================================================================
+
 #include "stdafx.h"
 #include "Definitions.h"
 #include "Live_AnalysingServerMediaSubsession.h"

@@ -3,32 +3,48 @@
 //==========================================================================
 // Main Example for Live555 and FFMPEG
 //
-// See Definitions.h to select your encoder 
 //==========================================================================
-
+// Definitions.h allows you to select an encoder 
+//    - Choose between H264, H265, MP4, and MP2
+//    - Choose between multicast and unicast
+//==========================================================================
 
 #include "stdafx.h"
 #include "FFMPEGClass.h"
 
 int main(int argc, char* argv[])
 {
+	//Some local variables
+	int mVidWidth = 640;
+	int mVidHeight = 480;
+
 	//Create Class
 	FFMPEG * mFFMPEG = new FFMPEG();
 	
 	//Setup Encoder
-	mFFMPEG->mVideoHeight = 480;
-	mFFMPEG->mVideoWidth = 640;
-	mFFMPEG->m_AVIMOV_BPS = 1000000;
-	
+	mFFMPEG->SetVideoResolution(mVidWidth, mVidHeight);	//Set Frame Resolution
+	mFFMPEG->m_AVIMOV_BPS = 1000000;		//Set Bitrate (this is extremely important to get correct)
+
+	/*
+	//--------------------
+	//Optional settings
+	//--------------------
+	mFFMPEG->SetRTSPPort(8554);
+	mFFMPEG->SetRTSPUserandPassword("admin", "admin");
+	mFFMPEG->SetRTSPAddress("multicast");
+	mFFMPEG->SetRTSPDescription("This is the stream description");
+	//--------------------
+	*/
+
 	//Start Encoding and Streaming
 	mFFMPEG->Start();
 
 	//Temporary Frame
-	unsigned char * TempRGBFrame = new unsigned char[640 * 480 * 3];
+	unsigned char * TempRGBFrame = new unsigned char[mVidWidth * mVidHeight * 3];
 
 	//Main Random Frame Generation loop
 	while (1) {
-		for (int i = 0; i < 640 * 480 * 3; i++) {
+		for (int i = 0; i < mVidWidth * mVidHeight * 3; i++) {
 			TempRGBFrame[i] = rand() % 256;
 		}
 		mFFMPEG->SendNewFrame((char*)TempRGBFrame);

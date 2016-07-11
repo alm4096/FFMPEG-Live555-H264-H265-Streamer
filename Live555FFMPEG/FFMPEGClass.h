@@ -103,9 +103,15 @@ public:
 
 	void PassRTSPAddress(char * addr);
 
-	int mVideoWidth;
-	int mVideoHeight;
+	void SetVideoResolution(int width, int height);
+
 	int	m_AVIMOV_BPS;
+
+	//Live555 Setup
+	void SetRTSPPort(int PortNo);
+	void SetRTSPUserandPassword(char * Username, char * Password);
+	void SetRTSPAddress(char * streamname);
+	void SetRTSPDescription(char * streamdescription);
 
 private:
 	//Mutex Functions
@@ -121,6 +127,9 @@ private:
 
 	HANDLE mFrameMtx;
 	HANDLE mLiveMtx;
+
+	int mVideoWidth;
+	int mVideoHeight;
 
 protected:
 
