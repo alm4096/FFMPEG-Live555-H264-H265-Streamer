@@ -22,9 +22,6 @@ Send me a message if you would like to collaborate.
 - Clean up code
 - Allow 'users' (i.e. programmer using class) to directly change encoding options
 - Make the following an option instead of being hard coded:
-  - Video frame size (height and width of stream is hard coded at the moment)
-  - Stream name (name after the IP and Port)
-  - Stream authentication (Username and password)
   - Encoding format (H264, H265, etc)
   - Unicast / Multicast
   - Encoding presets (for H264 and H265)
