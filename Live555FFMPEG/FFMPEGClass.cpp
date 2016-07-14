@@ -240,7 +240,7 @@ DWORD FFMPEG::GetReturnValue()
 void FFMPEG::SetDefaultVals(){
 	//Set Defaults
 	m_RTP_Payload_Size=30000;	
-	m_AVIMOV_FPS=25;		//Movie frames per second
+	m_AVIMOV_FPS=10;		//Movie frames per second
 	m_AVIMOV_GOB=3;		//I frames per no of P frames, see note below!
 	m_AVIMOV_BPS=1000000; //Bits per second, if this is too low then movie will become garbled or grey (H264 and H265 are funny about this)
 }
@@ -418,7 +418,9 @@ void FFMPEG::SetupCodec(const char *filename, int codec_id)
 			av_opt_set(m_c->priv_data, "preset", "fast", 0); //change between ultrafast,superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo
 		}
 
-		m_c->rtp_payload_size = m_RTP_Payload_Size;// 30000 This is the NAL unit size!
+		av_opt_set_int(m_c->priv_data, "slice-max-size", m_RTP_Payload_Size, 0); //Replaces RTP Payload size
+
+		//m_c->rtp_payload_size = m_RTP_Payload_Size;// 30000 This is the NAL unit size!
 	}
 
 	
@@ -439,7 +441,20 @@ void FFMPEG::SetupCodec(const char *filename, int codec_id)
 		}
 		
 		//Allocate RGB frame that we can pass to the YUV frame
-		ret = avpicture_alloc(&m_src_picture, AV_PIX_FMT_RGB24, m_c->width, m_c->height);
+		//ret = avpicture_alloc(&m_src_picture, AV_PIX_FMT_RGB24, m_c->width, m_c->height);
+		m_framesrc = av_frame_alloc();
+		if (!m_framesrc) {
+			return;
+		}
+	
+
+		//Actually use the frame
+		m_framesrc->format = m_c->pix_fmt;
+		m_framesrc->width = m_c->width;
+		m_framesrc->height = m_c->height;
+
+		ret = av_image_alloc(m_framesrc->data, m_framesrc->linesize, m_c->width, m_c->height,
+			AV_PIX_FMT_RGB24, 24);
 		if (ret < 0) {
 			return;
 		}
@@ -504,7 +519,7 @@ void FFMPEG::WriteFrame(void){
 
 	//Convert RGB frame (m_src_picture) to and YUV frame (m_dst_picture)
 	sws_scale(sws_ctx,
-		(uint8_t* const*)m_src_picture.data, m_src_picture.linesize,
+		(uint8_t* const*)m_framesrc->data, m_framesrc->linesize,
 		0, m_c->height, (uint8_t* const*)m_frame->data, m_frame->linesize);
 	
 	//Pass back...
@@ -637,7 +652,7 @@ void FFMPEG::WriteFrame(void){
 					else {
 						memcpy( mFrameStructure[mFrameStructureSent].dataPointer, &InitialPacketBuff[NalStart], 100000 );
 						mFrameStructure[mFrameStructureSent].dataSize = 100000;
-						TRACE("NAL PACKET TOO BIG!!!\n");
+						//TRACE("NAL PACKET TOO BIG!!!\n");
 						//__debugbreak();
 					}
 					
@@ -723,7 +738,7 @@ int FFMPEG::MUTEX_LOCK( HANDLE m_Mutex, DWORD atimeout, std::string functionname
 void FFMPEG::SetupVideo(char * filename, int Width, int Height, int FPS, int GOB, int BitPerSecond, int RTPPSize) {
 	
 	//Copy filename to local string
-	sprintf(m_filename,filename);
+	sprintf_s(m_filename,1024,filename);
 	
 	//Set movie parameters
 	m_AVIMOV_WIDTH=Width;	//Movie width
@@ -795,7 +810,10 @@ void FFMPEG::CloseCodec(void){
 	m_c = NULL;
 	
 	//Free our frames
-    av_free(m_src_picture.data[0]);
+    //av_free(m_src_picture.data[0]);
+	//->
+	av_freep(&m_framesrc->data[0]);
+	av_frame_free(&m_framesrc);
 	av_freep(&m_frame->data[0]);
 	av_frame_free(&m_frame);
 	
@@ -845,9 +863,9 @@ void FFMPEG::WriteDummyFrame(){
 		for (int x=0;x<m_c->width;x++) { //Width Loop
 			
 			//Save RGB frame to FFMPEG's source frame
-			m_src_picture.data[0][y * m_src_picture.linesize[0] + x*3+0] = char(rand()*255);  //Red Channel
-			m_src_picture.data[0][y * m_src_picture.linesize[0] + x*3+1] = char(rand()*255);  //Green Channel
-			m_src_picture.data[0][y * m_src_picture.linesize[0] + x*3+2] = char(rand()*255);  //Blue Channel
+			m_framesrc->data[0][y * m_framesrc->linesize[0] + x * 3 + 0] = char(rand() * 255);  //Red Channel
+			m_framesrc->data[0][y * m_framesrc->linesize[0] + x*3+1] = char(rand()*255);  //Green Channel
+			m_framesrc->data[0][y * m_framesrc->linesize[0] + x*3+2] = char(rand()*255);  //Blue Channel
 		}
 	}
 	
@@ -878,9 +896,9 @@ void FFMPEG::WriteFrame(char * RGBFrame) {
 		for (int x=0;x<m_c->width;x++) { //Width Loop
 
 			//Save RGB frame to FFMPEG's source frame
-			m_src_picture.data[0][y * m_src_picture.linesize[0] + x*3+0] = RGBFrame[(y*m_c->width+x)*3+0];  //Red Channel
-			m_src_picture.data[0][y * m_src_picture.linesize[0] + x*3+1] = RGBFrame[(y*m_c->width+x)*3+1];  //Green Channel
-			m_src_picture.data[0][y * m_src_picture.linesize[0] + x*3+2] = RGBFrame[(y*m_c->width+x)*3+2];  //Blue Channel
+			m_framesrc->data[0][y * m_framesrc->linesize[0] + x*3+0] = RGBFrame[(y*m_c->width+x)*3+0];  //Red Channel
+			m_framesrc->data[0][y * m_framesrc->linesize[0] + x*3+1] = RGBFrame[(y*m_c->width+x)*3+1];  //Green Channel
+			m_framesrc->data[0][y * m_framesrc->linesize[0] + x*3+2] = RGBFrame[(y*m_c->width+x)*3+2];  //Blue Channel
 		}
 	}
 

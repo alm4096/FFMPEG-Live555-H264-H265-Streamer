@@ -22,10 +22,10 @@
 //============================
 //Choose one and only one encoder
 //============================
-//#define H264ENCODING
+#define H264ENCODING
 //#define H265ENCODING
 //#define MP2ENCODING
-#define MPEG4ENCODING
+//#define MPEG4ENCODING
 //============================
 
 //#define Live555Debug

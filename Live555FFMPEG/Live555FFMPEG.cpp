@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
 	
 	//Setup Encoder
 	mFFMPEG->SetVideoResolution(mVidWidth, mVidHeight);	//Set Frame Resolution
-	mFFMPEG->m_AVIMOV_BPS = 1000000;		//Set Bitrate (this is extremely important to get correct)
+	mFFMPEG->m_AVIMOV_BPS = 5000000;		//Set Bitrate (this is extremely important to get correct)
 
 	/*
 	//--------------------

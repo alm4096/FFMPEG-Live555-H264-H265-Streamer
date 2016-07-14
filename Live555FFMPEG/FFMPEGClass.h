@@ -201,7 +201,7 @@ private:
 	void SetupCodec(const char *filename, int codec_id);
 
 	void *sws_ctx_void;
-	AVFrame *m_frame;
+	AVFrame *m_frame, *m_framesrc;
     AVCodecContext *m_c;
 	AVStream *m_video_st;
 	AVOutputFormat *m_fmt;

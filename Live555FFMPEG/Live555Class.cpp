@@ -39,7 +39,7 @@ void Live555Class::SetDefaultValues() {
 	RTSP_Address[0] = 0x00;
 
 	//Set stream description
-	strcpy(RTSP_Description, "Session streamed by \"IMC Server\"");
+	strcpy_s(RTSP_Description, "Session streamed by \"IMC Server\"");
 }
 
 // ==========================================================================

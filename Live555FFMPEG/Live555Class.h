@@ -25,16 +25,16 @@ public:
 	}
 
 	void SetRTSPUserandPassword(char * Username, char * Password) {
-		strcpy(RTSPUser, Username);
-		strcpy(RTSPPass, Password);
+		strcpy_s(RTSPUser, Username);
+		strcpy_s(RTSPPass, Password);
 	}
 
 	void SetRTSPAddress(char * streamname) {
-		strcpy(RTSP_Address, streamname);
+		strcpy_s(RTSP_Address, streamname);
 	}
 
 	void SetRTSPDescription(char * streamdescription) {
-		strcpy(RTSP_Description, streamdescription);
+		strcpy_s(RTSP_Description, streamdescription);
 	}
 protected:
 
