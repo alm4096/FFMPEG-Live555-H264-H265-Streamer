@@ -414,7 +414,7 @@ void FFMPEG::SetupCodec(const char *filename, int codec_id)
 		//m_c->rtp_payload_size = m_RTP_Payload_Size;// 30000 This is the NAL unit size!
 		m_c->bit_rate = m_AVIMOV_BPS;			//Bits Per Second 
 
-		if (codec_id == AV_CODEC_ID_H264) {
+		if ((codec_id == AV_CODEC_ID_H264) || (codec_id == AV_CODEC_ID_H265)){
 			av_opt_set(m_c->priv_data, "preset", "fast", 0); //change between ultrafast,superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo
 		}
 
@@ -863,7 +863,7 @@ void FFMPEG::WriteDummyFrame(){
 		for (int x=0;x<m_c->width;x++) { //Width Loop
 			
 			//Save RGB frame to FFMPEG's source frame
-			m_framesrc->data[0][y * m_framesrc->linesize[0] + x * 3 + 0] = char(rand() * 255);  //Red Channel
+			m_framesrc->data[0][y * m_framesrc->linesize[0] + x*3+0] = char(rand() * 255);  //Red Channel
 			m_framesrc->data[0][y * m_framesrc->linesize[0] + x*3+1] = char(rand()*255);  //Green Channel
 			m_framesrc->data[0][y * m_framesrc->linesize[0] + x*3+2] = char(rand()*255);  //Blue Channel
 		}
