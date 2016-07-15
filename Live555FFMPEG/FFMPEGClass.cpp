@@ -856,21 +856,19 @@ void FFMPEG::CloseVideo(void){
 //-----------------------------
 void FFMPEG::WriteDummyFrame(){
 
-	//Step through height of frame
-	for (int y=0;y<m_c->height;y++) {  //Height Loop
+	char * tempDummyFrame=new char [m_c->height * m_c->width*3];
 
-		//Step through width of frame
-		for (int x=0;x<m_c->width;x++) { //Width Loop
-			
-			//Save RGB frame to FFMPEG's source frame
-			m_framesrc->data[0][y * m_framesrc->linesize[0] + x*3+0] = char(rand() * 255);  //Red Channel
-			m_framesrc->data[0][y * m_framesrc->linesize[0] + x*3+1] = char(rand()*255);  //Green Channel
-			m_framesrc->data[0][y * m_framesrc->linesize[0] + x*3+2] = char(rand()*255);  //Blue Channel
-		}
+	//Step through height of frame
+	for (int x=0;x<m_c->height * m_c->width*3;x++) {  //Height Loop
+
+		//Save RGB frame to FFMPEG's source frame
+		tempDummyFrame[x] = char(rand() * 255);
 	}
 	
 	//Send frame off to FFMPEG for encoding
-	WriteFrame();
+	WriteFrame(tempDummyFrame);
+	
+	delete [] tempDummyFrame;
 }
 
 
