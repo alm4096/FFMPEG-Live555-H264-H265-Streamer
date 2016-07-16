@@ -14,6 +14,7 @@
 #include "Live555Class.h"
 #include "Live_AnalysingServerMediaSubsession.h"
 #include <exception>
+#include "libavcodec\avcodec.h"
 
 // ==========================================================================
 Live555Class::Live555Class( FFMPEG * a_Encoder )
@@ -179,15 +180,6 @@ DWORD Live555Class::LiveSingleStart() {
 	ServerMediaSession* sms;
 	UNREFERENCED_PARAMETER(sms);
 
-	//If multicast then init as such
-#ifdef MULTICASTENABLE
-	unsigned short rtpPortNum = 20000;
-	unsigned short rtcpPortNum = rtpPortNum+1;
-	unsigned char ttl = 5;
-	struct in_addr destinationAddress;
-	unsigned short rtspPort = 8554;
-	unsigned short rtspOverHTTPPort = 8080;
-#endif
 
 	AnalyserInput* inputDevice;
 
@@ -209,41 +201,49 @@ DWORD Live555Class::LiveSingleStart() {
 			OutPacketBuffer::maxSize = 300000;
 
 			//Create our various streams. We need to pass some sort of identifier so that it will init properly 
-#ifdef MULTICASTENABLE
-			destinationAddress.s_addr = chooseRandomIPv4SSMAddress(*env);	
-			ServerMediaSession* sms = ServerMediaSession::createNew(*env, RTSP_Address);
-#ifdef H264ENCODING
-			sms->addSubsession(MulticastServerMediaSubsession::createNew(*env,destinationAddress, Port(rtpPortNum), Port(rtcpPortNum), ttl, 96, inputDevice,96));
-#endif
-#ifdef H265ENCODING
-			sms->addSubsession(MulticastServerMediaSubsession::createNew(*env,destinationAddress, Port(rtpPortNum), Port(rtcpPortNum), ttl, 96, inputDevice,97));
-#endif
-#ifdef MP2ENCODING
-			sms->addSubsession(MulticastServerMediaSubsession::createNew(*env,destinationAddress, Port(rtpPortNum), Port(rtcpPortNum), ttl, 96, inputDevice,32));
-#endif
-#ifdef MPEG4ENCODING
-			sms->addSubsession(MulticastServerMediaSubsession::createNew(*env, destinationAddress, Port(rtpPortNum), Port(rtcpPortNum), ttl, 96, inputDevice, 999));
-#endif
+			if (m_multicast) {
 
-			//Add the stream to Live555
-			rtspServer->addServerMediaSession(sms);
-			url = rtspServer->rtspURL(sms);
-			*env << "Play this stream using the URL \"" << url << "\"\n";
+				//If multicast then init as such
+				unsigned short rtpPortNum = 20000;
+				unsigned short rtcpPortNum = rtpPortNum + 1;
+				unsigned char ttl = 5;
+				struct in_addr destinationAddress;
 
-			//Store our URL
-			m_Encoder->PassRTSPAddress(url);
-#else
-			// NOTE: This *must* be a Video Elementary Stream; not a Program Stream
-			sms = ServerMediaSession::createNew(*env, RTSP_Address, RTSP_Address, RTSP_Description);
-			sms->addSubsession(AnalysingServerMediaSubsession::createNew(*env, *inputDevice, m_Encoder->Get_Bitrate()));
+				destinationAddress.s_addr = chooseRandomIPv4SSMAddress(*env);
+				ServerMediaSession* sms = ServerMediaSession::createNew(*env, RTSP_Address);
+				if (m_selected_encoder == AV_CODEC_ID_H264) {
+					sms->addSubsession(MulticastServerMediaSubsession::createNew(*env, destinationAddress, Port(rtpPortNum), Port(rtcpPortNum), ttl, 96, inputDevice, 96));
+				}
+				if (m_selected_encoder == AV_CODEC_ID_H265) {
+					sms->addSubsession(MulticastServerMediaSubsession::createNew(*env, destinationAddress, Port(rtpPortNum), Port(rtcpPortNum), ttl, 96, inputDevice, 97));
+				}
+				if (m_selected_encoder == AV_CODEC_ID_MPEG2VIDEO) {
+					sms->addSubsession(MulticastServerMediaSubsession::createNew(*env, destinationAddress, Port(rtpPortNum), Port(rtcpPortNum), ttl, 96, inputDevice, 32));
+				}
+				if (m_selected_encoder == AV_CODEC_ID_MPEG4) {
+					sms->addSubsession(MulticastServerMediaSubsession::createNew(*env, destinationAddress, Port(rtpPortNum), Port(rtcpPortNum), ttl, 96, inputDevice, 999));
+				}
 
-			rtspServer->addServerMediaSession(sms);
-			url = rtspServer->rtspURL(sms);
-			*env << "Play this stream using the URL \"" << url << "\"\n";
+				//Add the stream to Live555
+				rtspServer->addServerMediaSession(sms);
+				url = rtspServer->rtspURL(sms);
+				*env << "Play this stream using the URL \"" << url << "\"\n";
 
-			//Store our URL
-			m_Encoder->PassRTSPAddress(url);
-#endif
+				//Store our URL
+				m_Encoder->PassRTSPAddress(url);
+			}
+			{
+				// NOTE: This *must* be a Video Elementary Stream; not a Program Stream
+				sms = ServerMediaSession::createNew(*env, RTSP_Address, RTSP_Address, RTSP_Description);
+				sms->addSubsession(AnalysingServerMediaSubsession::createNew(*env, *inputDevice, m_Encoder->Get_Bitrate()));
+
+				rtspServer->addServerMediaSession(sms);
+				url = rtspServer->rtspURL(sms);
+				*env << "Play this stream using the URL \"" << url << "\"\n";
+
+				//Store our URL
+				m_Encoder->PassRTSPAddress(url);
+			}
 
 		}
 	}

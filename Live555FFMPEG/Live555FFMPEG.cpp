@@ -11,6 +11,7 @@
 
 #include "stdafx.h"
 #include "FFMPEGClass.h"
+#include "libavcodec\avcodec.h"
 
 int main(int argc, char* argv[])
 {
@@ -33,6 +34,16 @@ int main(int argc, char* argv[])
 	mFFMPEG->SetRTSPUserandPassword("admin", "admin");
 	mFFMPEG->SetRTSPAddress("multicast");
 	mFFMPEG->SetRTSPDescription("This is the stream description");
+
+	//Encoder options
+	mFFMPEG->SetEncoder(AV_CODEC_ID_H264);
+	// AV_CODEC_ID_H265
+	// AV_CODEC_ID_H264
+	// AV_CODEC_ID_MPEG4
+	// AV_CODEC_ID_MPEG2VIDEO
+
+	mFFMPEG->SetMulticast();
+	mFFMPEG->SetUnicast();
 	//--------------------
 	*/
 

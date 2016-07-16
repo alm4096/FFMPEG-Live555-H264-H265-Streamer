@@ -3,7 +3,6 @@
 
 #include <OnDemandServerMediaSubsession.hh>
 #include "Live_AnalyserInput.h"
-#ifdef MULTICASTENABLE
 
 #include <liveMedia.hh>
 #include <string>
@@ -60,8 +59,6 @@ public:
 	}*/
 };
 
-#endif
-
 
 class AnalysingServerMediaSubsession: public OnDemandServerMediaSubsession {
 
@@ -91,7 +88,6 @@ private:
 
 };
 
-#ifdef MULTICASTENABLE
 
 // -----------------------------------------
 //    ServerMediaSubsession for Multicast
@@ -122,5 +118,3 @@ class MulticastServerMediaSubsession : public PassiveServerMediaSubsession , pub
 
 #endif
 
-
-#endif

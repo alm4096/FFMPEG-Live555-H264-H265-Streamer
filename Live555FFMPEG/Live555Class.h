@@ -36,6 +36,16 @@ public:
 	void SetRTSPDescription(char * streamdescription) {
 		strcpy_s(RTSP_Description, streamdescription);
 	}
+
+	void SetEncoder(int m_enc) {
+		m_selected_encoder = m_enc;
+	}
+	void SetMulticast(void) {
+		m_multicast = 1;
+	}
+	void SetUnicast(void) {
+		m_multicast = 0;
+	}
 protected:
 
 	static unsigned long WINAPI Link( void *aParam );
@@ -49,6 +59,9 @@ private:
 	char RTSPPass[100];
 	char RTSP_Address[1024];
 	char RTSP_Description[1024];
+
+	int m_selected_encoder;
+	int m_multicast;
 
 	DWORD LiveSingleStart();
 	HANDLE mHandle;

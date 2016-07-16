@@ -9,51 +9,22 @@
 #include "Live_AnalysingServerMediaSubsession.h"
 #include "FFMPEGClass.h"
 
-
-#ifdef MPEG4ENCODING
 #include <MPEG4ESVideoRTPSink.hh>
 #include <MPEG4VideoStreamFramer.hh>
 #include <MPEG4VideoStreamDiscreteFramer.hh>
 
-AnalysingServerMediaSubsession* AnalysingServerMediaSubsession::createNew(UsageEnvironment& env, AnalyserInput& wisInput, unsigned estimatedBitrate,
-	Boolean iFramesOnly,
-	double vshPeriod) {
-		return new AnalysingServerMediaSubsession(env, wisInput, estimatedBitrate,
-			iFramesOnly, vshPeriod);
-}
-
-AnalysingServerMediaSubsession
-	::AnalysingServerMediaSubsession(UsageEnvironment& env, AnalyserInput& analyserInput,	unsigned estimatedBitrate, Boolean iFramesOnly, double vshPeriod) 
-	: OnDemandServerMediaSubsession(env, True /*reuse the first source*/),
-
-	fAnalyserInput(analyserInput), fIFramesOnly(iFramesOnly), fVSHPeriod(vshPeriod) {
-		fEstimatedKbps = (estimatedBitrate + 500)/1000;
-
-}
-
-AnalysingServerMediaSubsession
-	::~AnalysingServerMediaSubsession() {
-}
-
-FramedSource* AnalysingServerMediaSubsession ::createNewStreamSource(unsigned /*clientSessionId*/, unsigned& estBitrate) {
-	estBitrate = fEstimatedKbps;
-
-	// Create a framer for the Video Elementary Stream:
-	//LOG_MSG("Create Net Stream Source [%d]", estBitrate);
-
-	return MPEG4VideoStreamDiscreteFramer::createNew(envir(), fAnalyserInput.videoSource());
-}
-
-RTPSink* AnalysingServerMediaSubsession ::createNewRTPSink(Groupsock* rtpGroupsock, unsigned char /*rtpPayloadTypeIfDynamic*/, FramedSource* /*inputSource*/) {
-	setVideoRTPSinkBufferSize();
-	return MPEG4ESVideoRTPSink::createNew(envir(), rtpGroupsock, 96);
-}
-#endif
-
-#ifdef H265ENCODING
 #include <H265VideoRTPSink.hh>
 #include <H265VideoStreamFramer.hh>
 #include <H265VideoStreamDiscreteFramer.hh>
+
+#include <H264VideoRTPSink.hh>
+#include <H264VideoStreamFramer.hh>
+#include <H264VideoStreamDiscreteFramer.hh>
+
+#include <MPEG1or2VideoRTPSink.hh>
+#include <MPEG1or2VideoStreamFramer.hh>
+#include <MPEG1or2VideoStreamDiscreteFramer.hh>
+
 
 AnalysingServerMediaSubsession* AnalysingServerMediaSubsession::createNew(UsageEnvironment& env, AnalyserInput& wisInput, unsigned estimatedBitrate,
 	Boolean iFramesOnly,
@@ -75,61 +46,44 @@ AnalysingServerMediaSubsession
 ::~AnalysingServerMediaSubsession() {
 }
 
+
+
 FramedSource* AnalysingServerMediaSubsession ::createNewStreamSource(unsigned /*clientSessionId*/, unsigned& estBitrate) {
 	estBitrate = fEstimatedKbps;
 
 	// Create a framer for the Video Elementary Stream:
 	//LOG_MSG("Create Net Stream Source [%d]", estBitrate);
+	//fAnalyserInput.videoSource()->
 
+#ifdef MPEG4ENCODING
+	return MPEG4VideoStreamDiscreteFramer::createNew(envir(), fAnalyserInput.videoSource());
+#endif
+#ifdef H265ENCODING
 	return H265VideoStreamDiscreteFramer::createNew(envir(), fAnalyserInput.videoSource());
-}
-
-RTPSink* AnalysingServerMediaSubsession ::createNewRTPSink(Groupsock* rtpGroupsock, unsigned char /*rtpPayloadTypeIfDynamic*/, FramedSource* /*inputSource*/) {
-	setVideoRTPSinkBufferSize();
-	return H265VideoRTPSink::createNew(envir(), rtpGroupsock, 96);
-}
 #endif
 #ifdef H264ENCODING
-#include <H264VideoRTPSink.hh>
-#include <H264VideoStreamFramer.hh>
-#include <H264VideoStreamDiscreteFramer.hh>
-
-AnalysingServerMediaSubsession* AnalysingServerMediaSubsession::createNew(UsageEnvironment& env, AnalyserInput& wisInput, unsigned estimatedBitrate,
-	Boolean iFramesOnly,
-	double vshPeriod) {
-		return new AnalysingServerMediaSubsession(env, wisInput, estimatedBitrate,
-			iFramesOnly, vshPeriod);
-}
-
-AnalysingServerMediaSubsession
-	::AnalysingServerMediaSubsession(UsageEnvironment& env, AnalyserInput& analyserInput,	unsigned estimatedBitrate, Boolean iFramesOnly, double vshPeriod) 
-	: OnDemandServerMediaSubsession(env, True /*reuse the first source*/),
-
-	fAnalyserInput(analyserInput), fIFramesOnly(iFramesOnly), fVSHPeriod(vshPeriod) {
-		fEstimatedKbps = (estimatedBitrate + 500)/1000;
-
-}
-
-AnalysingServerMediaSubsession
-	::~AnalysingServerMediaSubsession() {
-}
-
-FramedSource* AnalysingServerMediaSubsession ::createNewStreamSource(unsigned /*clientSessionId*/, unsigned& estBitrate) {
-	estBitrate = fEstimatedKbps;
-
-	// Create a framer for the Video Elementary Stream:
-	//LOG_MSG("Create Net Stream Source [%d]", estBitrate);
-
 	return H264VideoStreamDiscreteFramer::createNew(envir(), fAnalyserInput.videoSource());
+#endif
+#if defined(MP2ENCODING)  || defined(MP1ENCODING)
+	return MPEG1or2VideoStreamDiscreteFramer::createNew(envir(), fAnalyserInput.videoSource());
+#endif
 }
 
 RTPSink* AnalysingServerMediaSubsession ::createNewRTPSink(Groupsock* rtpGroupsock, unsigned char /*rtpPayloadTypeIfDynamic*/, FramedSource* /*inputSource*/) {
 	setVideoRTPSinkBufferSize();
-	return H264VideoRTPSink::createNew(envir(), rtpGroupsock, 96);
-}
+#ifdef MPEG4ENCODING
+	return MPEG4ESVideoRTPSink::createNew(envir(), rtpGroupsock, 96);
 #endif
-
-#ifdef MULTICASTENABLE
+#ifdef H265ENCODING
+	return H265VideoRTPSink::createNew(envir(), rtpGroupsock, 96);
+#endif
+#ifdef H264ENCODING
+	return H264VideoRTPSink::createNew(envir(), rtpGroupsock, 96);
+#endif
+#if defined(MP2ENCODING)  || defined(MP1ENCODING)
+	return MPEG1or2VideoRTPSink::createNew(envir(), rtpGroupsock);
+#endif
+}
 
 // -----------------------------------------
 //    ServerMediaSubsession for Multicast
@@ -182,54 +136,6 @@ char const* MulticastServerMediaSubsession::getAuxSDPLine(RTPSink* rtpSink,Frame
 	return this->getAuxLine(dynamic_cast<AnalyserSource*>(m_replicator->videoSource()), rtpSink->rtpPayloadType());
 }*/
 
-#endif
 
-#if defined(MP2ENCODING)  || defined(MP1ENCODING)
-#include <MPEG1or2VideoRTPSink.hh>
-#include <MPEG1or2VideoStreamFramer.hh>
-#include <MPEG1or2VideoStreamDiscreteFramer.hh>
-
-AnalysingServerMediaSubsession* AnalysingServerMediaSubsession::createNew(UsageEnvironment& env, AnalyserInput& wisInput, unsigned estimatedBitrate,
-	Boolean iFramesOnly,
-	double vshPeriod) {
-		return new AnalysingServerMediaSubsession(env, wisInput, estimatedBitrate,
-			iFramesOnly, vshPeriod);
-}
-
-AnalysingServerMediaSubsession
-	::AnalysingServerMediaSubsession(UsageEnvironment& env, AnalyserInput& analyserInput,	unsigned estimatedBitrate, Boolean iFramesOnly, double vshPeriod) 
-	: OnDemandServerMediaSubsession(env, True /*reuse the first source*/),
-
-	fAnalyserInput(analyserInput), fIFramesOnly(iFramesOnly), fVSHPeriod(vshPeriod) {
-		fEstimatedKbps = (estimatedBitrate + 500)/1000;
-
-}
-
-AnalysingServerMediaSubsession
-	::~AnalysingServerMediaSubsession() {
-}
-
-FramedSource* AnalysingServerMediaSubsession ::createNewStreamSource(unsigned /*clientSessionId*/, unsigned& estBitrate) {
-	estBitrate = fEstimatedKbps;
-
-	// Create a framer for the Video Elementary Stream:
-	//LOG_MSG("Create Net Stream Source [%d]", estBitrate);
-
-	return MPEG1or2VideoStreamDiscreteFramer::createNew(envir(), fAnalyserInput.videoSource());
-}
-
-RTPSink* AnalysingServerMediaSubsession ::createNewRTPSink(Groupsock* rtpGroupsock, unsigned char /*rtpPayloadTypeIfDynamic*/, FramedSource* /*inputSource*/) {
-	setVideoRTPSinkBufferSize();
-	/*
-	struct in_addr destinationAddress;
-	destinationAddress.s_addr = inet_addr("239.255.12.42");
-
-	rtpGroupsock->addDestination(destinationAddress,8888);
-	rtpGroupsock->multicastSendOnly();
-	*/
-	// 32 or 33 for MPG2  https://en.wikipedia.org/wiki/RTP_audio_video_profile
-	return MPEG1or2VideoRTPSink::createNew(envir(), rtpGroupsock);
-}
-#endif
 
 
