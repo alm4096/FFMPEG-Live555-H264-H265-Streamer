@@ -105,6 +105,8 @@ public:
 
 	void SetVideoResolution(int width, int height);
 
+	int GetEncoderType(void){ return m_selected_encoder; }
+
 	int	m_AVIMOV_BPS;
 
 	//Live555 Setup

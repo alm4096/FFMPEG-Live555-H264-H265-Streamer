@@ -10,6 +10,7 @@ public:
   static AnalyserInput* createNew(UsageEnvironment& env, FFMPEG *Encoder);
 
   FramedSource* videoSource();
+  int GetEncoderType();
 
 private:
   AnalyserInput(UsageEnvironment& env, FFMPEG *Encoder); // called only by createNew()

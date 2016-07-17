@@ -48,13 +48,25 @@ AnalysingServerMediaSubsession
 
 
 
-FramedSource* AnalysingServerMediaSubsession ::createNewStreamSource(unsigned /*clientSessionId*/, unsigned& estBitrate) {
+FramedSource* AnalysingServerMediaSubsession::createNewStreamSource(unsigned /*clientSessionId*/, unsigned& estBitrate) {
 	estBitrate = fEstimatedKbps;
-
+	
 	// Create a framer for the Video Elementary Stream:
 	//LOG_MSG("Create Net Stream Source [%d]", estBitrate);
 	//fAnalyserInput.videoSource()->
-
+	if (fAnalyserInput.GetEncoderType() == AV_CODEC_ID_MPEG4) {
+		return MPEG4VideoStreamDiscreteFramer::createNew(envir(), fAnalyserInput.videoSource());
+	}
+	if (fAnalyserInput.GetEncoderType() == AV_CODEC_ID_MPEG2VIDEO) {
+		return MPEG1or2VideoStreamDiscreteFramer::createNew(envir(), fAnalyserInput.videoSource());
+	}
+	if (fAnalyserInput.GetEncoderType() == AV_CODEC_ID_H265) {
+		return H265VideoStreamDiscreteFramer::createNew(envir(), fAnalyserInput.videoSource());
+	}
+	if (fAnalyserInput.GetEncoderType() == AV_CODEC_ID_H264) {
+		return H264VideoStreamDiscreteFramer::createNew(envir(), fAnalyserInput.videoSource());
+	}
+	/*
 #ifdef MPEG4ENCODING
 	return MPEG4VideoStreamDiscreteFramer::createNew(envir(), fAnalyserInput.videoSource());
 #endif
@@ -67,10 +79,26 @@ FramedSource* AnalysingServerMediaSubsession ::createNewStreamSource(unsigned /*
 #if defined(MP2ENCODING)  || defined(MP1ENCODING)
 	return MPEG1or2VideoStreamDiscreteFramer::createNew(envir(), fAnalyserInput.videoSource());
 #endif
+	*/
 }
 
 RTPSink* AnalysingServerMediaSubsession ::createNewRTPSink(Groupsock* rtpGroupsock, unsigned char /*rtpPayloadTypeIfDynamic*/, FramedSource* /*inputSource*/) {
 	setVideoRTPSinkBufferSize();
+
+	if (fAnalyserInput.GetEncoderType() == AV_CODEC_ID_MPEG4) {
+		return MPEG4ESVideoRTPSink::createNew(envir(), rtpGroupsock, 96);
+	}
+	if (fAnalyserInput.GetEncoderType() == AV_CODEC_ID_MPEG2VIDEO) {
+		return MPEG1or2VideoRTPSink::createNew(envir(), rtpGroupsock);
+	}
+	if (fAnalyserInput.GetEncoderType() == AV_CODEC_ID_H265) {
+		return H265VideoRTPSink::createNew(envir(), rtpGroupsock, 96);
+	}
+	if (fAnalyserInput.GetEncoderType() == AV_CODEC_ID_H264) {
+		return H264VideoRTPSink::createNew(envir(), rtpGroupsock, 96);
+	}
+
+	/*
 #ifdef MPEG4ENCODING
 	return MPEG4ESVideoRTPSink::createNew(envir(), rtpGroupsock, 96);
 #endif
@@ -82,7 +110,7 @@ RTPSink* AnalysingServerMediaSubsession ::createNewRTPSink(Groupsock* rtpGroupso
 #endif
 #if defined(MP2ENCODING)  || defined(MP1ENCODING)
 	return MPEG1or2VideoRTPSink::createNew(envir(), rtpGroupsock);
-#endif
+#endif*/
 }
 
 // -----------------------------------------

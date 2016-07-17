@@ -400,14 +400,14 @@ void FFMPEG::SetupCodec(const char *filename, int codec_id)
 	// Add the audio and video streams using the default format codecs
 	// and initialize the codecs.
 	m_video_st = NULL;
-	
+
 	// Add an output stream.
 	{
 
 		//find the encoder
 		m_video_codec = avcodec_find_encoder((AVCodecID)codec_id);  //avcodec_find_encoder(m_fmt->video_codec);
 		if (!(m_video_codec)) {
-				return;
+			return;
 		}
 
 		m_c = avcodec_alloc_context3(m_video_codec);
@@ -417,15 +417,16 @@ void FFMPEG::SetupCodec(const char *filename, int codec_id)
 
 		//Setup fundumental video stream parameters
 		//m_c->codec_id = m_fmt->video_codec;
-		m_c->width    = m_AVIMOV_WIDTH;			//Note Resolution must be a multiple of 2!!
-		m_c->height   = m_AVIMOV_HEIGHT;		//Note Resolution must be a multiple of 2!!
+		m_c->width = m_AVIMOV_WIDTH;			//Note Resolution must be a multiple of 2!!
+		m_c->height = m_AVIMOV_HEIGHT;		//Note Resolution must be a multiple of 2!!
 		m_c->time_base.den = m_AVIMOV_FPS;		//Frames per second
 		m_c->time_base.num = 1;
 		m_c->gop_size = m_AVIMOV_GOB;		// Intra frames per x P frames
 
-#if defined(MPEG4ENCODING) || defined(MP2ENCODING) || defined(MJPEGENCODING) || defined(MP1ENCODING)
-		m_c->max_b_frames = 1;
-#endif
+
+		if ((m_selected_encoder==AV_CODEC_ID_MPEG4) || (m_selected_encoder==AV_CODEC_ID_MPEG2VIDEO)) {
+			m_c->max_b_frames = 1;
+		}
 
 		m_c->pix_fmt       = AV_PIX_FMT_YUV420P;//Do not change this, H264 needs YUV format not RGB
 		//m_c->rtp_payload_size = m_RTP_Payload_Size;// 30000 This is the NAL unit size!

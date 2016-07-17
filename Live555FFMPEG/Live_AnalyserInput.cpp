@@ -19,6 +19,10 @@ AnalyserInput* AnalyserInput::createNew(UsageEnvironment& env, FFMPEG *Encoder) 
 }
 
 
+int AnalyserInput::GetEncoderType() {
+	return m_Encoder->GetEncoderType();
+}
+
 FramedSource* AnalyserInput::videoSource() {
   if (fOurVideoSource == NULL || AnalyserSource::GetRefCount() == 0) {
     fOurVideoSource = AnalyserSource::createNew(envir(), m_Encoder);

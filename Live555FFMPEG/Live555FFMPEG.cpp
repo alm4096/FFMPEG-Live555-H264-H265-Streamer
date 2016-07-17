@@ -4,10 +4,6 @@
 // Main Example for Live555 and FFMPEG
 //
 //==========================================================================
-// Definitions.h allows you to select an encoder 
-//    - Choose between H264, H265, MP4, and MP2
-//    - Choose between multicast and unicast
-//==========================================================================
 
 #include "stdafx.h"
 #include "FFMPEGClass.h"
@@ -28,7 +24,7 @@ int main(int argc, char* argv[])
 
 	/*
 	//--------------------
-	//Optional settings
+	//Optional settings -- Uncomment to use
 	//--------------------
 	mFFMPEG->SetRTSPPort(8554);
 	mFFMPEG->SetRTSPUserandPassword("admin", "admin");
@@ -38,6 +34,7 @@ int main(int argc, char* argv[])
 
 	//Encoder options
 	mFFMPEG->SetEncoder(AV_CODEC_ID_H264);
+	//Other encoders
 	// AV_CODEC_ID_H265
 	// AV_CODEC_ID_H264
 	// AV_CODEC_ID_MPEG4
