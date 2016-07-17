@@ -115,6 +115,7 @@ public:
 	void SetEncoder(int m_enc);
 	void SetMulticast(void);
 	void SetUnicast(void);
+	void SetRtpPortNum(int m_rtpnum);
 
 private:
 	//Mutex Functions

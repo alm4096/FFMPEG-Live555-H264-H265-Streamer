@@ -41,6 +41,8 @@ void Live555Class::SetDefaultValues() {
 
 	//Set stream description
 	strcpy_s(RTSP_Description, "Session streamed by \"IMC Server\"");
+
+	SetRtpPortNum(20000);
 }
 
 // ==========================================================================
@@ -204,7 +206,7 @@ DWORD Live555Class::LiveSingleStart() {
 			if (m_multicast) {
 
 				//If multicast then init as such
-				unsigned short rtpPortNum = 20000;
+				unsigned short rtpPortNum = m_rtpPortNum;
 				unsigned short rtcpPortNum = rtpPortNum + 1;
 				unsigned char ttl = 5;
 				struct in_addr destinationAddress;
