@@ -105,6 +105,8 @@ public:
 
 	void SetVideoResolution(int width, int height);
 
+	int GetEncoderType(void){ return m_selected_encoder; }
+
 	int	m_AVIMOV_BPS;
 
 	//Live555 Setup
@@ -112,6 +114,10 @@ public:
 	void SetRTSPUserandPassword(char * Username, char * Password);
 	void SetRTSPAddress(char * streamname);
 	void SetRTSPDescription(char * streamdescription);
+	void SetEncoder(int m_enc);
+	void SetMulticast(void);
+	void SetUnicast(void);
+	void SetRtpPortNum(int m_rtpnum);
 
 private:
 	//Mutex Functions
@@ -168,10 +174,10 @@ private:
 	bool mStop;
 	DWORD mReturnValue;	
 
-#if defined(H264ENCODING) || defined(H265ENCODING)
+//#if defined(H264ENCODING) || defined(H265ENCODING)
 	char * InitialPacketBuff;
 	int InitialPacketBuffSize;
-#endif
+//#endif
 
 
 private:
@@ -191,6 +197,8 @@ private:
 	int m_FrameID;
 	int m_LastSentFrameID;
 	bool m_AVIMutex;
+	int m_selected_encoder;
+	int m_multicast;
 
     double m_video_time;
 

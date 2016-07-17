@@ -75,11 +75,13 @@ FFMPEG::FFMPEG()
 	PCFreq = 0.0;
 	CounterStart = 0;
 	
-	
-#if defined(H264ENCODING) || defined(H265ENCODING)
+	SetEncoder(AV_CODEC_ID_H264);
+	SetMulticast();
+
+//#if defined(H264ENCODING) || defined(H265ENCODING)
 	InitialPacketBuff=new char [10000000];
 	InitialPacketBuffSize=0;
-#endif
+//#endif
 	m_AVIMutexWriteFrame=false;
 	
 	//Create semaphores not Mutexes (in windows land semaphores are equivalent to Mutexes)
@@ -91,6 +93,21 @@ FFMPEG::FFMPEG()
 	LoadSQLDatabase();
 }
 
+void FFMPEG::SetRtpPortNum(int m_rtpnum) {
+	mLive555Class->SetRtpPortNum(m_rtpnum);
+}
+void FFMPEG::SetEncoder(int m_enc) {
+	m_selected_encoder = m_enc;
+	mLive555Class->SetEncoder(m_enc);
+}
+void FFMPEG::SetMulticast(void) {
+	m_multicast = 1;
+	mLive555Class->SetMulticast();
+}
+void FFMPEG::SetUnicast(void) {
+	m_multicast = 0;
+	mLive555Class->SetUnicast();
+}
 
 void FFMPEG::SetVideoResolution(int width, int height) {
 	mVideoHeight = height;
@@ -138,9 +155,9 @@ FFMPEG::~FFMPEG()
 		delete Tmp_Node;
 	}
 
-#if defined(H264ENCODING) || defined(H265ENCODING)
+//#if defined(H264ENCODING) || defined(H265ENCODING)
 	delete [] InitialPacketBuff;
-#endif
+//#endif
 
 	for (int i=0;i<_NOBUFFFRAMES;i++) {	
 		if (mFrameStructure[i].dataPointer!=NULL) {
@@ -383,14 +400,14 @@ void FFMPEG::SetupCodec(const char *filename, int codec_id)
 	// Add the audio and video streams using the default format codecs
 	// and initialize the codecs.
 	m_video_st = NULL;
-	
+
 	// Add an output stream.
 	{
 
 		//find the encoder
 		m_video_codec = avcodec_find_encoder((AVCodecID)codec_id);  //avcodec_find_encoder(m_fmt->video_codec);
 		if (!(m_video_codec)) {
-				return;
+			return;
 		}
 
 		m_c = avcodec_alloc_context3(m_video_codec);
@@ -400,15 +417,16 @@ void FFMPEG::SetupCodec(const char *filename, int codec_id)
 
 		//Setup fundumental video stream parameters
 		//m_c->codec_id = m_fmt->video_codec;
-		m_c->width    = m_AVIMOV_WIDTH;			//Note Resolution must be a multiple of 2!!
-		m_c->height   = m_AVIMOV_HEIGHT;		//Note Resolution must be a multiple of 2!!
+		m_c->width = m_AVIMOV_WIDTH;			//Note Resolution must be a multiple of 2!!
+		m_c->height = m_AVIMOV_HEIGHT;		//Note Resolution must be a multiple of 2!!
 		m_c->time_base.den = m_AVIMOV_FPS;		//Frames per second
 		m_c->time_base.num = 1;
 		m_c->gop_size = m_AVIMOV_GOB;		// Intra frames per x P frames
 
-#if defined(MPEG4ENCODING) || defined(MP2ENCODING) || defined(MJPEGENCODING) || defined(MP1ENCODING)
-		m_c->max_b_frames = 1;
-#endif
+
+		if ((m_selected_encoder==AV_CODEC_ID_MPEG4) || (m_selected_encoder==AV_CODEC_ID_MPEG2VIDEO)) {
+			m_c->max_b_frames = 1;
+		}
 
 		m_c->pix_fmt       = AV_PIX_FMT_YUV420P;//Do not change this, H264 needs YUV format not RGB
 		//m_c->rtp_payload_size = m_RTP_Payload_Size;// 30000 This is the NAL unit size!
@@ -543,143 +561,138 @@ void FFMPEG::WriteFrame(void){
 
 	//If size of encoded frame is zero, it means the image was buffered.
 	if (!ret && got_packet && pkt.size) {
-		
-#if defined(MPEG4ENCODING) || defined(MP2ENCODING) || defined(MP1ENCODING) || defined(MJPEGENCODING)
-				
-		mFrameStructureSent=(mFrameStructureSent+1)%_NOBUFFFRAMES;
 
-		//DO NOT CHANGE THIS TO ANYTHING BUT INFINITE, otherwise frames will be corrupted
-		if (MUTEX_LOCK(m_FrameStructMutex[mFrameStructureSent], INFINITE, __LOGMUTEXFUNCTION__)) {
+		if ((m_selected_encoder==AV_CODEC_ID_H265) || (m_selected_encoder==AV_CODEC_ID_H264)) {
 
-			if (mFrameStructure[mFrameStructureSent].dataSize != 0) {
-				//__debugbreak();
-				//TRACE("FFMPEG Problem!!!\n");
-				//Live555 is not getting packets
+			if (INT_MAX<10000000) {
+				__debugbreak();
 			}
 
-			if (pkt.size < 100000) {
-				memcpy(mFrameStructure[mFrameStructureSent].dataPointer, pkt.data, pkt.size);
-				mFrameStructure[mFrameStructureSent].dataSize = pkt.size;
-				m_FrameID = (m_FrameID % 32760) + 1;
-				mFrameStructure[mFrameStructureSent].FrameID = (m_FrameID);
+			if (InitialPacketBuffSize + pkt.size>10000000)  {
+				//We should have never got here...
+				InitialPacketBuffSize = 0;
+				__debugbreak();
+				//Something VERY VERY Bad is about to happen...
 			}
-			else {
-//				TRACE("ERROR! Packet too big");
-				memcpy(mFrameStructure[mFrameStructureSent].dataPointer, pkt.data, 100000);
-				mFrameStructure[mFrameStructureSent].dataSize = 100000;
-				m_FrameID = (m_FrameID % 32760) + 1;
-				mFrameStructure[mFrameStructureSent].FrameID = (m_FrameID);
-			}
-			UNLOCK(m_FrameStructMutex[mFrameStructureSent]);
-
-			if (Notify_Head_Node != NULL) {
-				//notify anyone waiting that a new frame is here..
-				Encoder_Notify_List_Node* Tmp_Head_Node = Notify_Head_Node;
-				while (Tmp_Head_Node != NULL) {
-					Tmp_Head_Node->task->triggerEvent(AnalyserSource::eventTriggerId, Tmp_Head_Node->source);
-					Tmp_Head_Node = Tmp_Head_Node->Next;
-
-				}
-			}
-		}
+			memcpy(&InitialPacketBuff[InitialPacketBuffSize], pkt.data, pkt.size);
+			InitialPacketBuffSize += pkt.size;
 
 
 
-#endif
-#if defined(H264ENCODING) || defined(H265ENCODING)
-		
-		if (INT_MAX<10000000) {
-			__debugbreak();
-		}
+			bool LoopTheLoop = true;
 
-		if (InitialPacketBuffSize+pkt.size>10000000)  {
-			//We should have never got here...
-			InitialPacketBuffSize=0;
-			__debugbreak();
-			//Something VERY VERY Bad is about to happen...
-		}
-		memcpy(&InitialPacketBuff[InitialPacketBuffSize],pkt.data,pkt.size);
-		InitialPacketBuffSize+=pkt.size;
+			//Break the encoded data into induvidual NAL units
+			while (LoopTheLoop) {
+				LoopTheLoop = false;
 
-		
-
-		bool LoopTheLoop=true;
-
-		//Break the encoded data into induvidual NAL units
-		while (LoopTheLoop) {
-			LoopTheLoop=false;
-
-			int NalStart=-1;
-			for (int k=0;k<InitialPacketBuffSize-4;k++) {
-				if ((InitialPacketBuff[k]==0x00) && (InitialPacketBuff[k+1]==0x00) && (InitialPacketBuff[k+2]==0x01)) {
-					NalStart=k+3;
-					break;
-				}
-			}
-
-			int NalEnd=-1;
-			if (NalStart!=-1) {
-				//We've found the start of a nal unit
-				for (int k=NalStart;k<InitialPacketBuffSize-4;k++) {
-					if (((InitialPacketBuff[k+1]==0x00) && (InitialPacketBuff[k+2]==0x00) && (InitialPacketBuff[k+3]==0x01)) || 
-						((InitialPacketBuff[k+1]==0x00) && (InitialPacketBuff[k+2]==0x00) && (InitialPacketBuff[k+3]==0x00))
-						)
-					{
-						NalEnd=k+1; 
-						LoopTheLoop=true;
+				int NalStart = -1;
+				for (int k = 0; k<InitialPacketBuffSize - 4; k++) {
+					if ((InitialPacketBuff[k] == 0x00) && (InitialPacketBuff[k + 1] == 0x00) && (InitialPacketBuff[k + 2] == 0x01)) {
+						NalStart = k + 3;
 						break;
 					}
 				}
-			}
 
-			if (LoopTheLoop) {
-
-				mFrameStructureSent=(mFrameStructureSent+1)%_NOBUFFFRAMES;
-
-				//DO NOT CHANGE THIS TO ANYTHING BUT INFINITE, otherwise frames will be corrupted
-				if(MUTEX_LOCK( m_FrameStructMutex[mFrameStructureSent],INFINITE,__LOGMUTEXFUNCTION__ ) ) {
-					
-					if (mFrameStructure[mFrameStructureSent].dataSize!=0) {
-						//__debugbreak();
-						//TRACE("FFMPEG Problem!!!\n");
-						//Live555 is not getting packets
-					}
-
-					if ((NalEnd - NalStart)<100000) {
-						memcpy( mFrameStructure[mFrameStructureSent].dataPointer, &InitialPacketBuff[NalStart], NalEnd - NalStart );
-						mFrameStructure[mFrameStructureSent].dataSize = NalEnd - NalStart;
-					}
-					else {
-						memcpy( mFrameStructure[mFrameStructureSent].dataPointer, &InitialPacketBuff[NalStart], 100000 );
-						mFrameStructure[mFrameStructureSent].dataSize = 100000;
-						//TRACE("NAL PACKET TOO BIG!!!\n");
-						//__debugbreak();
-					}
-					
-
-					InitialPacketBuffSize -= NalEnd;
-					memmove( &InitialPacketBuff[0], &InitialPacketBuff[NalEnd], InitialPacketBuffSize );
-
-					m_FrameID=(m_FrameID%32760)+1;
-					mFrameStructure[mFrameStructureSent].FrameID = (m_FrameID);
-					
-					UNLOCK( m_FrameStructMutex[mFrameStructureSent] );
-
-					if( Notify_Head_Node != NULL ) {
-						//notify anyone waiting that a new frame is here..
-						Encoder_Notify_List_Node* Tmp_Head_Node = Notify_Head_Node;
-						while( Tmp_Head_Node != NULL ) {
-							Tmp_Head_Node->task->triggerEvent( AnalyserSource::eventTriggerId, Tmp_Head_Node->source );
-							Tmp_Head_Node = Tmp_Head_Node->Next;
-
+				int NalEnd = -1;
+				if (NalStart != -1) {
+					//We've found the start of a nal unit
+					for (int k = NalStart; k<InitialPacketBuffSize - 4; k++) {
+						if (((InitialPacketBuff[k + 1] == 0x00) && (InitialPacketBuff[k + 2] == 0x00) && (InitialPacketBuff[k + 3] == 0x01)) ||
+							((InitialPacketBuff[k + 1] == 0x00) && (InitialPacketBuff[k + 2] == 0x00) && (InitialPacketBuff[k + 3] == 0x00))
+							)
+						{
+							NalEnd = k + 1;
+							LoopTheLoop = true;
+							break;
 						}
 					}
-				}			
+				}
+
+				if (LoopTheLoop) {
+
+					mFrameStructureSent = (mFrameStructureSent + 1) % _NOBUFFFRAMES;
+
+					//DO NOT CHANGE THIS TO ANYTHING BUT INFINITE, otherwise frames will be corrupted
+					if (MUTEX_LOCK(m_FrameStructMutex[mFrameStructureSent], INFINITE, __LOGMUTEXFUNCTION__)) {
+
+						if (mFrameStructure[mFrameStructureSent].dataSize != 0) {
+							//__debugbreak();
+							//TRACE("FFMPEG Problem!!!\n");
+							//Live555 is not getting packets
+						}
+
+						if ((NalEnd - NalStart)<100000) {
+							memcpy(mFrameStructure[mFrameStructureSent].dataPointer, &InitialPacketBuff[NalStart], NalEnd - NalStart);
+							mFrameStructure[mFrameStructureSent].dataSize = NalEnd - NalStart;
+						}
+						else {
+							memcpy(mFrameStructure[mFrameStructureSent].dataPointer, &InitialPacketBuff[NalStart], 100000);
+							mFrameStructure[mFrameStructureSent].dataSize = 100000;
+							//TRACE("NAL PACKET TOO BIG!!!\n");
+							//__debugbreak();
+						}
+
+
+						InitialPacketBuffSize -= NalEnd;
+						memmove(&InitialPacketBuff[0], &InitialPacketBuff[NalEnd], InitialPacketBuffSize);
+
+						m_FrameID = (m_FrameID % 32760) + 1;
+						mFrameStructure[mFrameStructureSent].FrameID = (m_FrameID);
+
+						UNLOCK(m_FrameStructMutex[mFrameStructureSent]);
+
+						if (Notify_Head_Node != NULL) {
+							//notify anyone waiting that a new frame is here..
+							Encoder_Notify_List_Node* Tmp_Head_Node = Notify_Head_Node;
+							while (Tmp_Head_Node != NULL) {
+								Tmp_Head_Node->task->triggerEvent(AnalyserSource::eventTriggerId, Tmp_Head_Node->source);
+								Tmp_Head_Node = Tmp_Head_Node->Next;
+
+							}
+						}
+					}
+				}
 			}
 		}
+		else {
 
+			mFrameStructureSent=(mFrameStructureSent+1)%_NOBUFFFRAMES;
 
-#endif
+			//DO NOT CHANGE THIS TO ANYTHING BUT INFINITE, otherwise frames will be corrupted
+			if (MUTEX_LOCK(m_FrameStructMutex[mFrameStructureSent], INFINITE, __LOGMUTEXFUNCTION__)) {
+
+				if (mFrameStructure[mFrameStructureSent].dataSize != 0) {
+					//__debugbreak();
+					//TRACE("FFMPEG Problem!!!\n");
+					//Live555 is not getting packets
+				}
+
+				if (pkt.size < 100000) {
+					memcpy(mFrameStructure[mFrameStructureSent].dataPointer, pkt.data, pkt.size);
+					mFrameStructure[mFrameStructureSent].dataSize = pkt.size;
+					m_FrameID = (m_FrameID % 32760) + 1;
+					mFrameStructure[mFrameStructureSent].FrameID = (m_FrameID);
+				}
+				else {
+					//				TRACE("ERROR! Packet too big");
+					memcpy(mFrameStructure[mFrameStructureSent].dataPointer, pkt.data, 100000);
+					mFrameStructure[mFrameStructureSent].dataSize = 100000;
+					m_FrameID = (m_FrameID % 32760) + 1;
+					mFrameStructure[mFrameStructureSent].FrameID = (m_FrameID);
+				}
+				UNLOCK(m_FrameStructMutex[mFrameStructureSent]);
+
+				if (Notify_Head_Node != NULL) {
+					//notify anyone waiting that a new frame is here..
+					Encoder_Notify_List_Node* Tmp_Head_Node = Notify_Head_Node;
+					while (Tmp_Head_Node != NULL) {
+						Tmp_Head_Node->task->triggerEvent(AnalyserSource::eventTriggerId, Tmp_Head_Node->source);
+						Tmp_Head_Node = Tmp_Head_Node->Next;
+
+					}
+				}
+			}
+		}
 
 		av_packet_unref(&pkt);
 
@@ -749,6 +762,8 @@ void FFMPEG::SetupVideo(char * filename, int Width, int Height, int FPS, int GOB
 	m_RTP_Payload_Size = RTPPSize;
 
 	//Pass Parameters to Setup Codec as H264 file
+	SetupCodec(m_filename, m_selected_encoder);
+	/*
 #ifdef MPEG4ENCODING
 	SetupCodec(m_filename, AV_CODEC_ID_MPEG4);
 #endif
@@ -768,6 +783,7 @@ void FFMPEG::SetupVideo(char * filename, int Width, int Height, int FPS, int GOB
 	SetupCodec(m_filename, AV_CODEC_ID_MJPEG);
 #endif
 	
+	*/
 
 	//------------
 	//NOTE: on GOB
