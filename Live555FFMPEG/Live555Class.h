@@ -46,9 +46,6 @@ public:
 	void SetUnicast(void) {
 		m_multicast = 0;
 	}
-	void SetRtpPortNum(int m_rtpnum) {
-		m_rtpPortNum = m_rtpnum;
-	}
 protected:
 
 	static unsigned long WINAPI Link( void *aParam );
@@ -65,7 +62,6 @@ private:
 
 	int m_selected_encoder;
 	int m_multicast;
-	int m_rtpPortNum;
 
 	DWORD LiveSingleStart();
 	HANDLE mHandle;

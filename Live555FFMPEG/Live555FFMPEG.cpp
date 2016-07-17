@@ -34,7 +34,6 @@ int main(int argc, char* argv[])
 	mFFMPEG->SetRTSPUserandPassword("admin", "admin");
 	mFFMPEG->SetRTSPAddress("multicast");
 	mFFMPEG->SetRTSPDescription("This is the stream description");
-	mFFMPEG->SetRtpPortNum(20000);
 
 	//Encoder options
 	mFFMPEG->SetEncoder(AV_CODEC_ID_H264);

@@ -93,9 +93,6 @@ FFMPEG::FFMPEG()
 	LoadSQLDatabase();
 }
 
-void FFMPEG::SetRtpPortNum(int m_rtpnum) {
-	mLive555Class->SetRtpPortNum(m_rtpnum);
-}
 void FFMPEG::SetEncoder(int m_enc) {
 	m_selected_encoder = m_enc;
 	mLive555Class->SetEncoder(m_enc);
